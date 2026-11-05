@@ -1,0 +1,19 @@
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+
+import App from './App.vue'
+import router from './router'
+
+describe('App', () => {
+  it('renders the app shell and the home view', async () => {
+    router.push('/')
+    await router.isReady()
+
+    const wrapper = mount(App, {
+      global: { plugins: [router] },
+    })
+
+    expect(wrapper.text()).toContain('CycleLog')
+    expect(wrapper.text()).toContain('Rides')
+  })
+})

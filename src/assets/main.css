@@ -1,0 +1,6 @@
+/*
+ * Tailwind v4 entry point. Configuration lives here in CSS rather than in a
+ * tailwind.config.js file. Add design tokens (colours, fonts, spacing) inside
+ * an @theme block when we need them: https://tailwindcss.com/docs/theme
+ */
+@import 'tailwindcss';
