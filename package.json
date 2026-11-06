@@ -14,7 +14,8 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:demo": "vite --mode demo"
   },
   "dependencies": {
     "pinia": "^4.0.3",

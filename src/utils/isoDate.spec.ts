@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 
-import { compareIsoDates, isValidIsoDate, toIsoDate, todayIsoDate } from './isoDate'
+import {
+  compareIsoDates,
+  isoDateToLocalDate,
+  isValidIsoDate,
+  toIsoDate,
+  todayIsoDate,
+} from './isoDate'
 
 describe('isValidIsoDate', () => {
   it.each(['2026-11-06', '2024-02-29', '2026-12-31', '2026-01-01'])('accepts %s', (value) => {
@@ -45,5 +51,22 @@ describe('compareIsoDates', () => {
   it('works as a sort comparator', () => {
     const dates = ['2026-03-01', '2025-12-31', '2026-01-15']
     expect([...dates].sort(compareIsoDates)).toEqual(['2025-12-31', '2026-01-15', '2026-03-01'])
+  })
+})
+
+describe('isoDateToLocalDate', () => {
+  it('gives local midnight on the same calendar day', () => {
+    const date = isoDateToLocalDate('2026-11-06')
+    expect([date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()]).toEqual([
+      2026, 10, 6, 0,
+    ])
+  })
+
+  it('round-trips with toIsoDate', () => {
+    expect(toIsoDate(isoDateToLocalDate('2024-02-29'))).toBe('2024-02-29')
+  })
+
+  it('throws for an invalid date', () => {
+    expect(() => isoDateToLocalDate('2026-02-30')).toThrow('Not a valid ISO date')
   })
 })

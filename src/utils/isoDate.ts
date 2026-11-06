@@ -55,3 +55,16 @@ export function compareIsoDates(a: IsoDate, b: IsoDate): number {
   if (a > b) return 1
   return 0
 }
+
+/**
+ * Converts a valid ISO date to a `Date` at local midnight on that day, for
+ * display formatting. Built from its parts, never via `new Date('YYYY-MM-DD')`,
+ * which would be UTC midnight and can show as the previous day.
+ */
+export function isoDateToLocalDate(value: IsoDate): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  if (year === undefined || month === undefined || day === undefined || !isValidIsoDate(value)) {
+    throw new Error(`Not a valid ISO date: ${value}`)
+  }
+  return new Date(year, month - 1, day)
+}
