@@ -3,13 +3,20 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import RideList from '@/components/RideList.vue'
+import RideSortControls from '@/components/RideSortControls.vue'
+import { useRideSortQuery } from '@/composables/useRideSortQuery'
+import { sortRides } from '@/models/rideSort'
 import { useRidesStore } from '@/stores/rides'
 
 const ridesStore = useRidesStore()
 
 // storeToRefs keeps state and getters reactive when destructured.
 // Actions (functions) are taken from the store object itself.
-const { sortedRides, rideCount, loadStatus, loadError } = storeToRefs(ridesStore)
+const { rides, rideCount, loadStatus, loadError } = storeToRefs(ridesStore)
+
+// The sort lives in the URL; sorting itself is a pure model function.
+const sort = useRideSortQuery()
+const sortedRides = computed(() => sortRides(rides.value, sort.value))
 
 const isLoading = computed(() => loadStatus.value === 'idle' || loadStatus.value === 'loading')
 const rideCountLabel = computed(
@@ -44,6 +51,7 @@ onMounted(() => {
 
     <template v-else>
       <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ rideCountLabel }}</p>
+      <RideSortControls v-model="sort" class="mt-4" />
       <RideList class="mt-4" :rides="sortedRides" />
     </template>
   </section>

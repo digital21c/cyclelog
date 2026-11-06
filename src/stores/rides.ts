@@ -30,7 +30,6 @@ export const useRidesStore = defineStore('rides', () => {
 
   // --- Getters ---------------------------------------------------------------
 
-  const sortedRides = computed(() => [...rides.value].sort(rideModel.compareRidesNewestFirst))
   const rideCount = computed(() => rides.value.length)
 
   function findRide(id: string): Ride | undefined {
@@ -93,7 +92,6 @@ export const useRidesStore = defineStore('rides', () => {
     rides,
     loadStatus,
     loadError,
-    sortedRides,
     rideCount,
     findRide,
     loadRides,

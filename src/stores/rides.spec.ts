@@ -151,16 +151,4 @@ describe('useRidesStore', () => {
       expect(await repository.getAll()).toEqual([keep])
     })
   })
-
-  describe('sortedRides', () => {
-    it('lists rides newest first without reordering the underlying state', async () => {
-      const { store } = setUpStore()
-      await addValidRide(store, { name: 'June', date: '2025-06-01' })
-      await addValidRide(store, { name: 'August', date: '2025-08-01' })
-      await addValidRide(store, { name: 'July', date: '2025-07-01' })
-
-      expect(store.sortedRides.map((ride) => ride.name)).toEqual(['August', 'July', 'June'])
-      expect(store.rides.map((ride) => ride.name)).toEqual(['June', 'August', 'July'])
-    })
-  })
 })
