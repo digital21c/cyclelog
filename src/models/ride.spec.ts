@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { createRide, updateRide, type Ride, type RideInput } from './ride'
+import { compareRidesNewestFirst, createRide, updateRide, type Ride, type RideInput } from './ride'
 
 // Local-time constructor: 6 Nov 2026, 09:00 wherever the test runs.
 const NOW = new Date(2026, 10, 6, 9, 0)
@@ -76,5 +76,27 @@ describe('updateRide', () => {
   it('returns errors and no ride when the edit is invalid', () => {
     const result = updateRide(createValidRide(), { ...input, distanceKm: 0 }, { now: LATER })
     expect(!result.valid && result.errors.distanceKm).toBeTruthy()
+  })
+})
+
+describe('compareRidesNewestFirst', () => {
+  const base = createValidRide()
+
+  it('orders by ride date, newest first', () => {
+    const older = { ...base, id: 'older', date: '2026-10-01' }
+    const newer = { ...base, id: 'newer', date: '2026-11-01' }
+    expect([older, newer].sort(compareRidesNewestFirst).map((ride) => ride.id)).toEqual([
+      'newer',
+      'older',
+    ])
+  })
+
+  it('breaks same-day ties by most recently recorded', () => {
+    const morning = { ...base, id: 'morning', createdAt: '2026-11-01T08:00:00.000Z' }
+    const evening = { ...base, id: 'evening', createdAt: '2026-11-01T19:00:00.000Z' }
+    expect([morning, evening].sort(compareRidesNewestFirst).map((ride) => ride.id)).toEqual([
+      'evening',
+      'morning',
+    ])
   })
 })
