@@ -1,0 +1,67 @@
+# Checks, builds and publishes CycleLog to GitHub Pages:
+#   https://digital21c.github.io/cyclelog/
+#
+# Runs on every push to main (and can be started by hand from the Actions tab).
+# If type-checking, linting or any test fails, nothing is deployed, so a broken
+# build never replaces the working app.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: read the code, publish to Pages, and prove who is deploying.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits rather than cancelling one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26 # current LTS, matching local development
+          cache: npm
+
+      # Installs exactly what package-lock.json specifies.
+      - run: npm ci
+
+      # Quality gate. (`npm run lint` auto-fixes; here we only check.)
+      - run: npm run type-check
+      - run: npx oxlint .
+      - run: npx eslint .
+      - run: npm test
+
+      # GitHub Pages serves this project from /cyclelog/, not from /.
+      - run: npm run build-only -- --base=/cyclelog/
+
+      # GitHub Pages answers unknown paths with 404.html. Making it a copy of the
+      # app means a first visit to a deep link (e.g. /cyclelog/stats) still works;
+      # after that, the service worker handles every in-app URL itself.
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

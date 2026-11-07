@@ -197,6 +197,18 @@ and no `provide`/`inject` used as a store.
   Backup page, never at startup: Firefox shows a permission prompt for it.
 - Service workers need HTTPS (or localhost), so phone use requires a static HTTPS host.
 
+# Hosting and Deployment
+
+- Code: https://github.com/digital21c/cyclelog (public). Live app:
+  https://digital21c.github.io/cyclelog/ via GitHub Pages.
+- Pushing to `main` deploys, via `.github/workflows/deploy.yml`, after type-check, lint and
+  tests pass. Commit locally as usual; pushing is the deliberate "publish" step.
+- The app is served from the `/cyclelog/` sub-path. The base is set only for the Pages build
+  (`--base=/cyclelog/` in the workflow); dev, preview and tests stay at `/`. Never hard-code
+  root paths: use router names, `import.meta.env.BASE_URL`, or paths Vite rewrites.
+- `404.html` is a copy of `index.html`, so a first visit to a deep link still loads the app.
+- Commits use the GitHub no-reply email; keep it that way.
+
 # UI And Styling
 
 - Tailwind utility classes. Extract repeated patterns into small Vue components rather

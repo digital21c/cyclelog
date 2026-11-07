@@ -3,6 +3,9 @@
 A personal, offline-first cycling training log built with Vue 3, TypeScript, Pinia and
 Tailwind CSS.
 
+**Live app:** https://digital21c.github.io/cyclelog/ (installable, and works offline after the
+first visit). Rides are stored only in your own browser; use Backup to move them between devices.
+
 ## Setup
 
 Requires Node `^22.18.0 || >=24.12.0` (installed via nvm).
@@ -30,3 +33,11 @@ npm run dev
 Recommended editor: VS Code with the official Vue extension (`Vue.volar`).
 
 Architecture and coding conventions are documented in [CLAUDE.md](CLAUDE.md).
+
+## Deployment
+
+Every push to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml) on GitHub
+Actions: type-check, lint and tests first, then a build for the `/cyclelog/` sub-path, published
+to GitHub Pages. If any check fails, nothing is deployed. Progress is shown under the repository's
+**Actions** tab.
+

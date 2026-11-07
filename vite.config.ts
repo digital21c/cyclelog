@@ -27,8 +27,8 @@ export default defineConfig({
         short_name: 'CycleLog',
         description: 'A personal, offline-first cycling training log.',
         lang: 'en-GB',
-        start_url: '/',
-        scope: '/',
+        // start_url and scope are left out on purpose: the plugin sets both to
+        // Vite's base, so the app works at / locally and at /cyclelog/ on GitHub Pages.
         display: 'standalone', // opens in its own window, without browser toolbars
         theme_color: '#0369a1',
         background_color: '#f8fafc', // shown while the app starts (slate-50)
