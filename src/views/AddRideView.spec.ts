@@ -102,6 +102,7 @@ describe('AddRideView', () => {
       getAll: () => Promise.resolve([]),
       getById: () => Promise.resolve(undefined),
       save: () => Promise.reject(new Error('The quota has been exceeded.')),
+      saveMany: () => Promise.reject(new Error('The quota has been exceeded.')),
       delete: () => Promise.resolve(),
     }
     const { wrapper, router } = await openAddRide(failing, '/')

@@ -31,7 +31,7 @@ function inMemoryRepository(): RideRepository {
 /** A repository whose every operation fails, as with corrupted data or a full disk. */
 function failingRepository(): RideRepository {
   const fail = () => Promise.reject(new Error('Storage is broken'))
-  return { getAll: fail, getById: fail, save: fail, delete: fail }
+  return { getAll: fail, getById: fail, save: fail, saveMany: fail, delete: fail }
 }
 
 function validInput(overrides: Partial<RideInput> = {}): RideInput {
@@ -183,6 +183,65 @@ describe('useRidesStore', () => {
 
       expect(store.rides).toEqual([ride])
       expect(await repository.getAll()).toEqual([ride])
+    })
+  })
+
+  describe('importRides', () => {
+    function backupRide(id: string): Ride {
+      return {
+        id,
+        date: '2025-05-01',
+        name: `Backup ride ${id}`,
+        distanceKm: 30,
+        elevationM: 300,
+        createdAt: '2025-05-01T08:00:00.000Z',
+        updatedAt: '2025-05-01T08:00:00.000Z',
+      }
+    }
+
+    it('adds only new rides, leaving existing ones untouched', async () => {
+      const { store, repository } = setUpStore()
+      await store.loadRides()
+      const existing = await addValidRide(store, { name: 'Already here' })
+      const saveMany = vi.spyOn(repository, 'saveMany')
+
+      const added = await store.importRides([
+        { ...existing, name: 'Older copy from backup' },
+        backupRide('x'),
+        backupRide('y'),
+      ])
+
+      expect(added).toBe(2)
+      expect(saveMany).toHaveBeenCalledTimes(1)
+      expect(store.findRide(existing.id)?.name).toBe('Already here')
+      expect((await repository.getById(existing.id))?.name).toBe('Already here')
+      expect(store.rideCount).toBe(3)
+      expect(await repository.getAll()).toHaveLength(3)
+    })
+
+    it('saves nothing when every ride is already present', async () => {
+      const { store, repository } = setUpStore()
+      await store.loadRides()
+      const existing = await addValidRide(store)
+      const saveMany = vi.spyOn(repository, 'saveMany')
+
+      expect(await store.importRides([existing])).toBe(0)
+      expect(saveMany).not.toHaveBeenCalled()
+    })
+
+    it('refuses to import before rides have loaded', async () => {
+      const { store, repository } = setUpStore()
+      await expect(store.importRides([backupRide('x')])).rejects.toThrow(/finish loading/)
+      expect(await repository.getAll()).toEqual([])
+    })
+
+    it('rejects and leaves state unchanged if storage fails', async () => {
+      const { store, repository } = setUpStore()
+      await store.loadRides()
+      vi.spyOn(repository, 'saveMany').mockRejectedValueOnce(new Error('Storage is broken'))
+
+      await expect(store.importRides([backupRide('x')])).rejects.toThrow('Storage is broken')
+      expect(store.rides).toEqual([])
     })
   })
 })

@@ -35,12 +35,19 @@ export class LocalStorageRideRepository implements RideRepository {
   }
 
   async save(ride: Ride): Promise<void> {
+    return this.saveMany([ride])
+  }
+
+  /** One read and one write, so a failure can't leave a partial batch behind. */
+  async saveMany(ridesToSave: readonly Ride[]): Promise<void> {
     const rides = this.readRides()
-    const index = rides.findIndex((existing) => existing.id === ride.id)
-    if (index === -1) {
-      rides.push(ride)
-    } else {
-      rides[index] = ride
+    for (const ride of ridesToSave) {
+      const index = rides.findIndex((existing) => existing.id === ride.id)
+      if (index === -1) {
+        rides.push(ride)
+      } else {
+        rides[index] = ride
+      }
     }
     this.writeRides(rides)
   }

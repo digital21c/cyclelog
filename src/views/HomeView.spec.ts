@@ -159,6 +159,7 @@ describe('HomeView', () => {
       getAll: () => Promise.reject(new Error('Stored ride data is not valid JSON.')),
       getById: () => Promise.reject(new Error('unused')),
       save: () => Promise.reject(new Error('unused')),
+      saveMany: () => Promise.reject(new Error('unused')),
       delete: () => Promise.reject(new Error('unused')),
     }
     const { wrapper } = await mountHomeView(failing)

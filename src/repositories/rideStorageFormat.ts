@@ -86,13 +86,13 @@ export function deserializeRides(json: string | null): Ride[] {
   try {
     data = JSON.parse(json)
   } catch (cause) {
-    throw new RideStorageError('Stored ride data is not valid JSON.', { cause })
+    throw new RideStorageError('Ride data is not valid JSON.', { cause })
   }
 
   const version = readVersion(data)
   if (version > CURRENT_STORAGE_VERSION) {
     throw new RideStorageError(
-      `Stored ride data is version ${version}, but this app only understands up to ` +
+      `Ride data is version ${version}, but this app only understands up to ` +
         `version ${CURRENT_STORAGE_VERSION}. It was probably saved by a newer version of CycleLog.`,
     )
   }
@@ -103,11 +103,15 @@ export function deserializeRides(json: string | null): Ride[] {
 
 /** Turns rides into the JSON string to store, always at the current version. */
 export function serializeRides(rides: readonly Ride[]): string {
-  const store: RideStoreV1 = {
+  return JSON.stringify(toRideStore(rides))
+}
+
+/** Rides as the current versioned document, before turning it into JSON. */
+export function toRideStore(rides: readonly Ride[]): RideStoreV1 {
+  return {
     version: CURRENT_STORAGE_VERSION,
     rides: rides.map(toStoredRide),
   }
-  return JSON.stringify(store)
 }
 
 // ---------------------------------------------------------------------------
@@ -121,7 +125,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readVersion(data: unknown): number {
   const version = isRecord(data) ? data.version : undefined
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
-    throw new RideStorageError('Stored ride data has no valid version number.')
+    throw new RideStorageError('Ride data has no valid version number.')
   }
   return version
 }
@@ -129,13 +133,13 @@ function readVersion(data: unknown): number {
 function parseCurrentStore(data: unknown): RideStoreV1 {
   if (!isRecord(data) || data.version !== CURRENT_STORAGE_VERSION || !Array.isArray(data.rides)) {
     throw new RideStorageError(
-      `Stored ride data does not match the version ${CURRENT_STORAGE_VERSION} format.`,
+      `Ride data does not match the version ${CURRENT_STORAGE_VERSION} format.`,
     )
   }
 
   const badIndex = data.rides.findIndex((ride) => !isStoredRideV1(ride))
   if (badIndex !== -1) {
-    throw new RideStorageError(`Stored ride at position ${badIndex} is malformed.`)
+    throw new RideStorageError(`Ride at position ${badIndex} is malformed.`)
   }
 
   // Every field has been checked above, so this assertion is safe.

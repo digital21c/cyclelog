@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import type { Ride } from '@/models/ride'
 
@@ -77,6 +77,44 @@ describe('LocalStorageRideRepository', () => {
     expect(JSON.parse(storage.getItem(RIDES_STORAGE_KEY) ?? 'null')).toMatchObject({ version: 1 })
   })
 
+  describe('saveMany', () => {
+    it('inserts new rides and replaces existing ones, in one write', async () => {
+      await repository.save(makeRide({ id: 'a', name: 'Original' }))
+      const setItem = vi.spyOn(storage, 'setItem')
+
+      await repository.saveMany([
+        makeRide({ id: 'a', name: 'Replaced' }),
+        makeRide({ id: 'b' }),
+        makeRide({ id: 'c' }),
+      ])
+
+      expect(setItem).toHaveBeenCalledTimes(1)
+      const rides = await repository.getAll()
+      expect(rides.map((ride) => ride.id)).toEqual(['a', 'b', 'c'])
+      expect(rides[0]?.name).toBe('Replaced')
+    })
+
+    it('does nothing harmful with an empty batch', async () => {
+      await repository.save(makeRide())
+      await repository.saveMany([])
+      expect(await repository.getAll()).toEqual([makeRide()])
+    })
+
+    it('saves nothing if the write fails', async () => {
+      await repository.save(makeRide({ id: 'existing' }))
+      vi.spyOn(storage, 'setItem').mockImplementation(() => {
+        throw new Error('The quota has been exceeded.')
+      })
+
+      await expect(
+        repository.saveMany([makeRide({ id: 'x' }), makeRide({ id: 'y' })]),
+      ).rejects.toThrow('quota')
+      vi.restoreAllMocks()
+
+      expect((await repository.getAll()).map((ride) => ride.id)).toEqual(['existing'])
+    })
+  })
+
   describe('with corrupted stored data', () => {
     const corrupted = '{not json'
 
@@ -90,6 +128,11 @@ describe('LocalStorageRideRepository', () => {
 
     it('refuses to save, leaving the stored data untouched', async () => {
       await expect(repository.save(makeRide())).rejects.toThrow(RideStorageError)
+      expect(storage.getItem(RIDES_STORAGE_KEY)).toBe(corrupted)
+    })
+
+    it('refuses to save a batch, leaving the stored data untouched', async () => {
+      await expect(repository.saveMany([makeRide()])).rejects.toThrow(RideStorageError)
       expect(storage.getItem(RIDES_STORAGE_KEY)).toBe(corrupted)
     })
 

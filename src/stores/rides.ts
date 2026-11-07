@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import * as rideModel from '@/models/ride'
 import type { Ride, RideInput } from '@/models/ride'
 import type { ValidationResult } from '@/models/rideValidation'
+import { planImport } from '@/services/rideBackup'
 
 import { injectRideRepository } from './injectionKeys'
 
@@ -82,6 +83,27 @@ export const useRidesStore = defineStore('rides', () => {
     return result
   }
 
+  /**
+   * Imports rides from a backup, adding only those not already present (by id).
+   * Existing rides are never overwritten. All new rides are saved in one
+   * all-or-nothing write. Returns how many were added.
+   *
+   * Requires rides to be loaded first: otherwise every ride would look new,
+   * and saving would overwrite existing rides with the backup's copies.
+   */
+  async function importRides(incoming: readonly Ride[]): Promise<number> {
+    if (loadStatus.value !== 'loaded') {
+      throw new Error('Rides must finish loading before importing.')
+    }
+
+    const { newRides } = planImport(rides.value, incoming)
+    if (newRides.length === 0) return 0
+
+    await repository.saveMany(newRides)
+    rides.value = [...rides.value, ...newRides]
+    return newRides.length
+  }
+
   /** Deletes a ride. Rejects if storage fails, leaving state unchanged. */
   async function deleteRide(id: string): Promise<void> {
     await repository.delete(id)
@@ -98,6 +120,7 @@ export const useRidesStore = defineStore('rides', () => {
     addRide,
     updateRide,
     deleteRide,
+    importRides,
   }
 })
 

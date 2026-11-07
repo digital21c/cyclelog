@@ -41,3 +41,8 @@ export function formatDistanceKm(distanceKm: number): string {
 export function formatElevationM(elevationM: number): string {
   return elevationFormatter.format(elevationM)
 }
+
+/** 1 → "1 ride", 40 → "40 rides" */
+export function formatRideCount(count: number): string {
+  return `${count} ${count === 1 ? 'ride' : 'rides'}`
+}

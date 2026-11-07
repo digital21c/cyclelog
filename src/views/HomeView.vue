@@ -8,6 +8,7 @@ import RideSortControls from '@/components/RideSortControls.vue'
 import { useRideSortQuery } from '@/composables/useRideSortQuery'
 import { sortRides } from '@/models/rideSort'
 import { useRidesStore } from '@/stores/rides'
+import { formatRideCount } from '@/utils/formatting'
 
 const ridesStore = useRidesStore()
 
@@ -20,9 +21,7 @@ const sort = useRideSortQuery()
 const sortedRides = computed(() => sortRides(rides.value, sort.value))
 
 const isLoading = computed(() => loadStatus.value === 'idle' || loadStatus.value === 'loading')
-const rideCountLabel = computed(
-  () => `${rideCount.value} ${rideCount.value === 1 ? 'ride' : 'rides'}`,
-)
+const rideCountLabel = computed(() => formatRideCount(rideCount.value))
 </script>
 
 <template>

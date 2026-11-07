@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { formatDistanceKm, formatElevationM, formatRideDate } from './formatting'
+import { formatDistanceKm, formatElevationM, formatRideCount, formatRideDate } from './formatting'
 
 describe('formatRideDate', () => {
   it('formats as short weekday, day, short month and year', () => {
@@ -30,5 +30,16 @@ describe('formatElevationM', () => {
     [1234, '1,234 m'],
   ])('%s → %s', (value, expected) => {
     expect(formatElevationM(value)).toBe(expected)
+  })
+})
+
+describe('formatRideCount', () => {
+  it.each([
+    [0, '0 rides'],
+    [1, '1 ride'],
+    [2, '2 rides'],
+    [40, '40 rides'],
+  ])('%s → %s', (count, expected) => {
+    expect(formatRideCount(count)).toBe(expected)
   })
 })

@@ -22,6 +22,12 @@ export interface RideRepository {
    */
   save(ride: Ride): Promise<void>
 
+  /**
+   * Saves several rides as one all-or-nothing operation: either every ride is
+   * saved, or (on failure) none is. Same insert-or-replace rule as `save`.
+   */
+  saveMany(rides: readonly Ride[]): Promise<void>
+
   /** Removes the ride with this id. Does nothing if it doesn't exist. */
   delete(id: string): Promise<void>
 }

@@ -22,6 +22,11 @@ export const routes: RouteRecordRaw[] = [
     // Pass route params (here, `id`) to the view as props.
     props: true,
   },
+  {
+    path: '/backup',
+    name: 'backup',
+    component: () => import('@/views/BackupView.vue'),
+  },
 ]
 
 const router = createRouter({
