@@ -72,11 +72,16 @@ npm run build        # type-check (vue-tsc) and production build, run in paralle
 npm run type-check   # vue-tsc only
 npm test             # run Vitest once (use this for verification)
 npm run test:unit    # Vitest in watch mode (interactive development)
+npm run test:coverage  # tests + coverage report (terminal, and coverage/index.html)
+npm run dev:demo     # dev server with in-memory demo rides; real storage untouched
 npm run lint         # oxlint then ESLint, both with --fix
 npm run format       # Prettier on src/
 ```
 
 Before saying work is complete, run `npm run type-check`, `npm run lint` and `npm test`.
+
+Coverage has no enforced minimum. Use it to find untested *behaviour* (especially
+failure paths), not to chase a percentage.
 
 Linting runs in two passes: oxlint (a fast Rust linter) handles the common rules, and ESLint
 handles Vue- and TypeScript-specific rules. `eslint-plugin-oxlint` switches off any ESLint

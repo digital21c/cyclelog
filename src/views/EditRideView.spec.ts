@@ -162,3 +162,22 @@ describe('EditRideView', () => {
     expect(await repository.getAll()).toEqual([ride])
   })
 })
+
+describe('EditRideView when rides cannot be loaded', () => {
+  it('shows the load error instead of the form', async () => {
+    const repository = await repositoryWith([ride])
+    vi.spyOn(repository, 'getAll').mockRejectedValue(
+      new Error('Stored ride data is not valid JSON.'),
+    )
+    const { wrapper, store } = await openEditRide(repository, { loadRides: false })
+
+    await store.loadRides()
+    await flushPromises()
+
+    const alert = wrapper.get('[role="alert"]')
+    expect(alert.text()).toContain("Your rides couldn't be loaded.")
+    expect(alert.text()).toContain('Stored ride data is not valid JSON.')
+    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain("couldn't be found")
+  })
+})

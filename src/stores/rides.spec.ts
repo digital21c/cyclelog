@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -76,6 +76,16 @@ describe('useRidesStore', () => {
       expect(store.rideCount).toBe(1)
     })
 
+    it('ignores a second call while a load is already in progress', async () => {
+      const { store, repository } = setUpStore()
+      const getAll = vi.spyOn(repository, 'getAll')
+
+      await Promise.all([store.loadRides(), store.loadRides()])
+
+      expect(getAll).toHaveBeenCalledTimes(1)
+      expect(store.loadStatus).toBe('loaded')
+    })
+
     it('records a failure instead of throwing', async () => {
       const { store } = setUpStore(failingRepository())
       await store.loadRides()
@@ -137,6 +147,19 @@ describe('useRidesStore', () => {
       const { store } = setUpStore()
       await expect(store.updateRide('missing', validInput())).rejects.toThrow(/does not exist/)
     })
+
+    it('rejects and leaves state and storage unchanged if storage fails', async () => {
+      const { store, repository } = setUpStore()
+      const ride = await addValidRide(store)
+      vi.spyOn(repository, 'save').mockRejectedValueOnce(new Error('Storage is broken'))
+
+      await expect(store.updateRide(ride.id, validInput({ name: 'Changed' }))).rejects.toThrow(
+        'Storage is broken',
+      )
+
+      expect(store.rides).toEqual([ride])
+      expect(await repository.getAll()).toEqual([ride])
+    })
   })
 
   describe('deleteRide', () => {
@@ -149,6 +172,17 @@ describe('useRidesStore', () => {
 
       expect(store.rides).toEqual([keep])
       expect(await repository.getAll()).toEqual([keep])
+    })
+
+    it('rejects and leaves state and storage unchanged if storage fails', async () => {
+      const { store, repository } = setUpStore()
+      const ride = await addValidRide(store)
+      vi.spyOn(repository, 'delete').mockRejectedValueOnce(new Error('Storage is broken'))
+
+      await expect(store.deleteRide(ride.id)).rejects.toThrow('Storage is broken')
+
+      expect(store.rides).toEqual([ride])
+      expect(await repository.getAll()).toEqual([ride])
     })
   })
 })

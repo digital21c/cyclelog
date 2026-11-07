@@ -12,6 +12,14 @@ export default mergeConfig(
       // Node 25+ has its own built-in localStorage, which hides jsdom's and is
       // unusable without a --localstorage-file. Turn it off so tests get jsdom's.
       execArgv: ['--no-experimental-webstorage'],
+      // Used by `npm run test:coverage`. No minimum thresholds on purpose:
+      // coverage is a periodic check for untested behaviour, not a target.
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.{ts,vue}'],
+        exclude: ['src/**/*.spec.ts'],
+        reporter: ['text', 'html'], // terminal summary + browsable coverage/index.html
+      },
     },
   }),
 )
