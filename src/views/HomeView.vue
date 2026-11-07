@@ -30,7 +30,15 @@ onMounted(() => {
 
 <template>
   <section aria-labelledby="rides-heading">
-    <h1 id="rides-heading" class="text-2xl font-bold">Rides</h1>
+    <div class="flex items-center justify-between gap-4">
+      <h1 id="rides-heading" class="text-2xl font-bold">Rides</h1>
+      <RouterLink
+        :to="{ name: 'add-ride' }"
+        class="rounded-lg bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+      >
+        Add ride
+      </RouterLink>
+    </div>
 
     <p v-if="isLoading" role="status" class="mt-4 text-slate-600 dark:text-slate-400">
       Loading rides…
@@ -47,6 +55,12 @@ onMounted(() => {
 
     <p v-else-if="rideCount === 0" class="mt-4 text-slate-600 dark:text-slate-400">
       No rides recorded yet.
+      <RouterLink
+        :to="{ name: 'add-ride' }"
+        class="font-medium text-sky-700 underline hover:text-sky-800 dark:text-sky-400"
+      >
+        Add your first ride
+      </RouterLink>
     </p>
 
     <template v-else>

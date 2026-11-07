@@ -4,3 +4,11 @@
  * an @theme block when we need them: https://tailwindcss.com/docs/theme
  */
 @import 'tailwindcss';
+
+/*
+ * Tell the browser the page supports both schemes, so its built-in controls
+ * (date picker icon, scrollbars, autofill) follow the system light/dark setting.
+ */
+:root {
+  color-scheme: light dark;
+}

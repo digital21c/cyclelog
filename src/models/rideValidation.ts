@@ -56,7 +56,7 @@ export function validateRideInput(
   }
 
   if (!Number.isInteger(elevationM) || elevationM < 0) {
-    errors.elevationM = 'Elevation must be a whole number of metres, 0 or more.'
+    errors.elevationM = 'Climb must be a whole number of metres, 0 or more.'
   }
 
   if (Object.keys(errors).length > 0) {

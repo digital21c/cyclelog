@@ -8,6 +8,7 @@ import { InMemoryKeyValueStore } from '@/repositories/keyValueStore'
 import { LocalStorageRideRepository } from '@/repositories/localStorageRideRepository'
 import type { RideRepository } from '@/repositories/rideRepository'
 import { rideRepositoryKey } from '@/stores/injectionKeys'
+import { routes } from '@/router'
 
 import HomeView from './HomeView.vue'
 
@@ -61,7 +62,7 @@ async function repositoryWith(rides: Ride[]): Promise<RideRepository> {
 async function mountHomeView(repository: RideRepository, url = '/') {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: HomeView }],
+    routes,
   })
   await router.push(url)
 
@@ -162,5 +163,18 @@ describe('HomeView', () => {
     const alert = wrapper.get('[role="alert"]')
     expect(alert.text()).toContain("couldn't be loaded")
     expect(alert.text()).toContain('Stored ride data is not valid JSON.')
+  })
+})
+
+describe('HomeView navigation', () => {
+  it('links to the add-ride page from the header and the empty state', async () => {
+    const { wrapper } = await mountHomeView(await repositoryWith([]))
+    await flushPromises()
+
+    const links = wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])
+    expect(links).toEqual([
+      ['Add ride', '/rides/new'],
+      ['Add your first ride', '/rides/new'],
+    ])
   })
 })
