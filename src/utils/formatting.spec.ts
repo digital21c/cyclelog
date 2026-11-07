@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
 import {
+  formatActivePeriods,
+  formatAverageCount,
   formatDistanceKm,
   formatElevationM,
   formatPeriodCount,
@@ -70,5 +72,21 @@ describe('period labels', () => {
     [3, 'year', '3 years'],
   ] as const)('counts %s %s as "%s"', (count, period, expected) => {
     expect(formatPeriodCount(count, period)).toBe(expected)
+  })
+})
+
+describe('highlight formatting', () => {
+  it.each([
+    [2.75, '2.8'],
+    [3, '3'],
+    [0, '0'],
+    [12.04, '12'],
+  ])('formats the average count %s as "%s"', (value, expected) => {
+    expect(formatAverageCount(value)).toBe(expected)
+  })
+
+  it('describes how many periods had a ride', () => {
+    expect(formatActivePeriods(10, 12, 'week')).toBe('Ridden in 10 of 12 weeks')
+    expect(formatActivePeriods(1, 1, 'year')).toBe('Ridden in 1 of 1 year')
   })
 })

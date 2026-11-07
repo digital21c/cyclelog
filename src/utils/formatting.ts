@@ -94,3 +94,15 @@ export function formatPeriodShortLabel(periodStart: IsoDate, period: Period): st
 export function formatPeriodCount(count: number, period: Period): string {
   return `${count} ${period}${count === 1 ? '' : 's'}`
 }
+
+const oneDecimalFormatter = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 })
+
+/** 2.75 → "2.8", 3 → "3": an average count, to one decimal place at most. */
+export function formatAverageCount(value: number): string {
+  return oneDecimalFormatter.format(value)
+}
+
+/** "Ridden in 10 of 12 weeks": how many periods had at least one ride. */
+export function formatActivePeriods(active: number, total: number, period: Period): string {
+  return `Ridden in ${active} of ${formatPeriodCount(total, period)}`
+}

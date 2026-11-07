@@ -6,8 +6,11 @@ import {
   MONTHS_SHOWN,
   nextPeriodStart,
   periodRange,
+  ridesInRange,
   startOfPeriod,
   summariseByPeriod,
+  summariseHighlights,
+  TOP_RIDES_SHOWN,
   WEEKS_SHOWN,
 } from './rideStatistics'
 
@@ -143,5 +146,95 @@ describe('summariseByPeriod', () => {
 
   it('records which period it summarises', () => {
     expect(summariseByPeriod([], 'year', TODAY).period).toBe('year')
+  })
+})
+
+describe('ridesInRange', () => {
+  it('keeps only rides in the timeframe shown, including this week', () => {
+    const rides = [ride('2026-08-16'), ride('2026-08-17'), ride('2026-11-07')]
+    expect(ridesInRange(rides, 'week', TODAY).map((r) => r.date)).toEqual([
+      '2026-08-17',
+      '2026-11-07',
+    ])
+  })
+
+  it('keeps every ride for the yearly timeframe', () => {
+    const rides = [ride('2021-03-01'), ride('2026-11-01')]
+    expect(ridesInRange(rides, 'year', TODAY)).toHaveLength(2)
+  })
+})
+
+describe('summariseHighlights', () => {
+  it('averages distance and climb per ride across the timeframe', () => {
+    const rides = [
+      ride('2026-11-03', 40, 400),
+      ride('2026-11-04', 20, 100),
+      ride('2026-11-05', 30, 250),
+    ]
+    const highlights = summariseHighlights(rides, 'week', TODAY)
+    expect(highlights.rideCount).toBe(3)
+    expect(highlights.averageDistanceKm).toBe(30)
+    expect(highlights.averageElevationM).toBeCloseTo(250)
+  })
+
+  it('reports no averages (not zero) when there are no rides', () => {
+    const highlights = summariseHighlights([ride('2020-01-01')], 'week', TODAY)
+    expect(highlights).toMatchObject({
+      rideCount: 0,
+      averageDistanceKm: null,
+      averageElevationM: null,
+      longestRides: [],
+      greatestClimbs: [],
+    })
+  })
+
+  it('counts rides per period over every period shown, including this unfinished one', () => {
+    // 6 rides over the 12 weeks shown, in 4 different weeks.
+    const rides = [
+      ride('2026-11-02'),
+      ride('2026-11-03'),
+      ride('2026-10-20'),
+      ride('2026-09-01'),
+      ride('2026-09-02'),
+      ride('2026-08-20'),
+    ]
+    const highlights = summariseHighlights(rides, 'week', TODAY)
+    expect(highlights.periodCount).toBe(WEEKS_SHOWN)
+    expect(highlights.ridesPerPeriod).toBe(6 / 12)
+    expect(highlights.activePeriodCount).toBe(4)
+  })
+
+  it(`lists the ${TOP_RIDES_SHOWN} longest rides and greatest climbs in the timeframe`, () => {
+    const rides = [
+      ride('2026-11-01', 50, 900),
+      ride('2026-11-02', 120, 300),
+      ride('2026-11-03', 80, 1400),
+      ride('2026-11-04', 10, 50),
+      ride('2026-01-01', 999, 9999), // outside the 12 weeks
+    ]
+    const highlights = summariseHighlights(rides, 'week', TODAY)
+    expect(highlights.longestRides.map((r) => r.distanceKm)).toEqual([120, 80, 50])
+    expect(highlights.greatestClimbs.map((r) => r.elevationM)).toEqual([1400, 900, 300])
+  })
+
+  it('breaks ties in favour of the newest ride', () => {
+    const older = ride('2026-10-01', 60, 600)
+    const newer = ride('2026-10-15', 60, 600)
+    const highlights = summariseHighlights([older, newer], 'month', TODAY)
+    expect(highlights.longestRides.map((r) => r.date)).toEqual(['2026-10-15', '2026-10-01'])
+  })
+
+  it('shows shorter lists when there are fewer rides', () => {
+    const highlights = summariseHighlights([ride('2026-11-03')], 'week', TODAY)
+    expect(highlights.longestRides).toHaveLength(1)
+  })
+
+  it('agrees with the period summary about which rides count', () => {
+    const rides = [ride('2026-08-16', 70), ride('2026-08-17', 30), ride('2026-11-06', 20)]
+    for (const period of ['week', 'month', 'year'] as const) {
+      const highlights = summariseHighlights(rides, period, TODAY)
+      const summary = summariseByPeriod(rides, period, TODAY)
+      expect(highlights.rideCount).toBe(summary.totals.rideCount)
+    }
   })
 })

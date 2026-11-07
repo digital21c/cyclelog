@@ -114,4 +114,32 @@ describe('StatisticsView', () => {
     expect(charts[0]?.findAll('rect title').at(-1)?.text()).toMatch(/: 40 km$/)
     expect(charts[1]?.findAll('rect title').at(-1)?.text()).toMatch(/: 400 m$/)
   })
+
+  it('shows highlights and top rides for the selected timeframe', async () => {
+    const { wrapper } = await openStatistics(
+      await repositoryWith([
+        ride('short', 0, 10, 900),
+        ride('long', 1, 90, 100),
+        ride('ancient', 400, 150, 1500), // outside 12 weeks, inside the yearly view
+      ]),
+    )
+
+    const tiles = wrapper.findAll('dl > div').map((tile) => tile.get('dd').text())
+    expect(tiles).toEqual(['2', '0.2', '50 km', '500 m'])
+
+    const [longest, climbs] = wrapper.findAll('section section')
+    expect(longest?.findAll('li a').map((a) => a.text())).toEqual(['long', 'short'])
+    expect(climbs?.findAll('li a').map((a) => a.text())).toEqual(['short', 'long'])
+  })
+
+  it('updates the highlights when the timeframe changes', async () => {
+    const { wrapper } = await openStatistics(
+      await repositoryWith([ride('recent', 0, 10, 100), ride('ancient', 800, 150, 1500)]),
+    )
+    await wrapper.get('input[value="year"]').setValue(true)
+    await flushPromises()
+
+    expect(wrapper.findAll('dl > div')[0]?.get('dd').text()).toBe('2')
+    expect(wrapper.findAll('section section')[0]?.get('li a').text()).toBe('ancient')
+  })
 })

@@ -4,10 +4,12 @@ import { storeToRefs } from 'pinia'
 
 import AlertMessage from '@/components/AlertMessage.vue'
 import BarChart, { type Bar } from '@/components/BarChart.vue'
+import RideRanking from '@/components/RideRanking.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
+import StatHighlights from '@/components/StatHighlights.vue'
 import StatisticsTable from '@/components/StatisticsTable.vue'
 import { useStatsPeriodQuery } from '@/composables/useStatsPeriodQuery'
-import { summariseByPeriod, type StatsPeriod } from '@/services/rideStatistics'
+import { summariseByPeriod, summariseHighlights, type StatsPeriod } from '@/services/rideStatistics'
 import { useRidesStore } from '@/stores/rides'
 import {
   formatDistanceKm,
@@ -33,6 +35,7 @@ const today = todayIsoDate()
 
 // All calculation happens in the service; the page only chooses what to show.
 const summary = computed(() => summariseByPeriod(rides.value, period.value, today))
+const highlights = computed(() => summariseHighlights(rides.value, period.value, today))
 
 /** Chart bars, oldest to newest (left to right), one chart per measure. */
 function barsFor(measure: 'distanceKm' | 'elevationM'): Bar[] {
@@ -99,7 +102,18 @@ const caption = computed(() => {
 
       <h2 class="mt-6 text-lg font-semibold">{{ caption }}</h2>
 
-      <div class="mt-3 grid gap-6">
+      <StatHighlights class="mt-3" :highlights="highlights" />
+
+      <div class="mt-6 grid gap-6 sm:grid-cols-2">
+        <RideRanking title="Longest rides" :rides="highlights.longestRides" measure="distance" />
+        <RideRanking
+          title="Greatest climbs"
+          :rides="highlights.greatestClimbs"
+          measure="elevation"
+        />
+      </div>
+
+      <div class="mt-8 grid gap-6">
         <figure>
           <figcaption class="text-sm font-medium text-slate-600 dark:text-slate-400">
             Distance (km)

@@ -1,4 +1,5 @@
 import type { Ride } from '@/models/ride'
+import { sortRides } from '@/models/rideSort'
 import {
   addDays,
   addMonths,
@@ -21,6 +22,9 @@ export type StatsPeriod = (typeof STATS_PERIODS)[number]
 /** How many weeks/months are shown. Years show every year that has rides. */
 export const WEEKS_SHOWN = 12
 export const MONTHS_SHOWN = 12
+
+/** How many rides each "top" list shows. */
+export const TOP_RIDES_SHOWN = 3
 
 export interface Totals {
   rideCount: number
@@ -123,6 +127,65 @@ export function summariseByPeriod(
   }))
 
   return { period, rows, totals: sumTotals(rows) }
+}
+
+/** The rides that fall within the timeframe shown for `period` (see periodRange). */
+export function ridesInRange(rides: readonly Ride[], period: StatsPeriod, today: IsoDate): Ride[] {
+  const { first, last } = periodRange(rides, period, today)
+  const end = nextPeriodStart(last, period) // exclusive
+  return rides.filter(
+    (ride) => compareIsoDates(ride.date, first) >= 0 && compareIsoDates(ride.date, end) < 0,
+  )
+}
+
+export interface Highlights {
+  period: StatsPeriod
+  /** Periods in the timeframe, including the current, unfinished one. */
+  periodCount: number
+  /** Periods with at least one ride. */
+  activePeriodCount: number
+  rideCount: number
+  /** Average rides per period, e.g. per week. */
+  ridesPerPeriod: number
+  /** Per ride; null when there are no rides (rather than a misleading 0). */
+  averageDistanceKm: number | null
+  averageElevationM: number | null
+  /** Up to TOP_RIDES_SHOWN rides; ties go to the newest ride. */
+  longestRides: Ride[]
+  greatestClimbs: Ride[]
+}
+
+/**
+ * Highlights for the same timeframe as `summariseByPeriod`, so the two can
+ * never disagree about which rides count.
+ */
+export function summariseHighlights(
+  rides: readonly Ride[],
+  period: StatsPeriod,
+  today: IsoDate,
+): Highlights {
+  const summary = summariseByPeriod(rides, period, today)
+  const inRange = ridesInRange(rides, period, today)
+  const { rideCount, distanceKm, elevationM } = summary.totals
+  const periodCount = summary.rows.length
+
+  return {
+    period,
+    periodCount,
+    activePeriodCount: summary.rows.filter((row) => row.rideCount > 0).length,
+    rideCount,
+    ridesPerPeriod: rideCount / periodCount,
+    averageDistanceKm: rideCount > 0 ? distanceKm / rideCount : null,
+    averageElevationM: rideCount > 0 ? elevationM / rideCount : null,
+    longestRides: sortRides(inRange, { field: 'distance', direction: 'desc' }).slice(
+      0,
+      TOP_RIDES_SHOWN,
+    ),
+    greatestClimbs: sortRides(inRange, { field: 'elevation', direction: 'desc' }).slice(
+      0,
+      TOP_RIDES_SHOWN,
+    ),
+  }
 }
 
 function sumTotals(rows: readonly Totals[]): Totals {
