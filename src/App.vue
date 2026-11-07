@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 
+import NotificationToast from '@/components/NotificationToast.vue'
 import UpdatePrompt from '@/components/UpdatePrompt.vue'
 import { useRidesStore } from '@/stores/rides'
 
@@ -45,6 +46,12 @@ const navItems = [
       <RouterView />
     </main>
 
-    <UpdatePrompt />
+    <!-- Bottom message stack: confirmations and the update prompt never overlap.
+         pointer-events-none lets clicks pass through the empty stack area;
+         the messages themselves re-enable them. -->
+    <div class="pointer-events-none fixed inset-x-4 bottom-4 z-10 flex flex-col gap-2">
+      <NotificationToast />
+      <UpdatePrompt />
+    </div>
   </div>
 </template>

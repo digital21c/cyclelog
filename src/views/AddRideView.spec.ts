@@ -8,6 +8,7 @@ import { LocalStorageRideRepository } from '@/repositories/localStorageRideRepos
 import type { RideRepository } from '@/repositories/rideRepository'
 import { routes } from '@/router'
 import { rideRepositoryKey } from '@/stores/injectionKeys'
+import { useNotificationsStore } from '@/stores/notifications'
 
 import AddRideView from './AddRideView.vue'
 
@@ -29,13 +30,14 @@ async function openAddRide(repository: RideRepository, cameFrom?: string) {
   await router.replace(cameFrom ?? '/rides/new')
   if (cameFrom) await router.push('/rides/new')
 
+  const pinia = createPinia()
   const wrapper = mount(AddRideView, {
     global: {
-      plugins: [router, createPinia()],
+      plugins: [router, pinia],
       provide: { [rideRepositoryKey]: repository },
     },
   })
-  return { wrapper, router }
+  return { wrapper, router, notifications: useNotificationsStore(pinia) }
 }
 
 function inputLabelled(wrapper: VueWrapper, labelText: string) {
@@ -131,5 +133,18 @@ describe('AddRideView', () => {
     // router.back() completes asynchronously, via the browser's popstate event.
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/?sort=elevation'))
     expect(await repository.getAll()).toEqual([])
+  })
+
+  it('confirms the new ride once saved', async () => {
+    const { wrapper, notifications } = await openAddRide(inMemoryRepository(), '/')
+    await fillValidRide(wrapper)
+    await submit(wrapper)
+    expect(notifications.current?.message).toBe('Ride added: Black Mountain Climb.')
+  })
+
+  it('confirms nothing when the input is invalid or saving fails', async () => {
+    const { wrapper, notifications } = await openAddRide(inMemoryRepository(), '/')
+    await submit(wrapper) // empty form
+    expect(notifications.current).toBeNull()
   })
 })

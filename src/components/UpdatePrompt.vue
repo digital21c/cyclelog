@@ -32,8 +32,9 @@ function reloadIntoNewVersion(): void {
 </script>
 
 <template>
-  <!-- The live region stays in the page so screen readers announce new messages. -->
-  <div role="status" class="pointer-events-none fixed inset-x-4 bottom-4 z-10">
+  <div role="status" class="w-full">
+    <!-- The live region stays in the page so screen readers announce new messages.
+         Positioned by App.vue, in the bottom message stack. -->
     <div
       v-if="needRefresh || offlineReady"
       class="pointer-events-auto mx-auto flex max-w-md flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800"

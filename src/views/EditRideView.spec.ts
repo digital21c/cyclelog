@@ -9,6 +9,7 @@ import { LocalStorageRideRepository } from '@/repositories/localStorageRideRepos
 import type { RideRepository } from '@/repositories/rideRepository'
 import { routes } from '@/router'
 import { rideRepositoryKey } from '@/stores/injectionKeys'
+import { useNotificationsStore } from '@/stores/notifications'
 import { useRidesStore } from '@/stores/rides'
 
 import EditRideView from './EditRideView.vue'
@@ -57,7 +58,7 @@ async function openEditRide(
     await store.loadRides()
     await flushPromises()
   }
-  return { wrapper, router, store }
+  return { wrapper, router, store, notifications: useNotificationsStore(pinia) }
 }
 
 function inputLabelled(wrapper: VueWrapper, labelText: string) {
@@ -264,5 +265,34 @@ describe('EditRideView delete', () => {
 
     await buttonNamed(wrapper, 'Delete ride').trigger('click')
     expect(wrapper.find('dialog [role="alert"]').exists()).toBe(false)
+  })
+})
+
+describe('EditRideView confirmations', () => {
+  it('confirms saved changes, using the new name', async () => {
+    const { wrapper, notifications } = await openEditRide(await repositoryWith([ride]))
+    await inputLabelled(wrapper, 'Ride name').setValue('Uriarra Loop (windy)')
+    await submit(wrapper)
+    expect(notifications.current?.message).toBe('Changes saved: Uriarra Loop (windy).')
+  })
+
+  it('confirms a deletion, naming the ride that was deleted', async () => {
+    const { wrapper, notifications } = await openEditRide(await repositoryWith([ride]))
+    const deleteButton = wrapper.findAll('button').find((b) => b.text() === 'Delete ride')
+    await deleteButton?.trigger('click')
+    await wrapper.get('dialog').findAll('button')[1]?.trigger('click')
+    await flushPromises()
+    expect(notifications.current?.message).toBe('Ride deleted: Uriarra Loop.')
+  })
+
+  it('confirms nothing when deleting fails', async () => {
+    const repository = await repositoryWith([ride])
+    const { wrapper, notifications } = await openEditRide(repository)
+    vi.spyOn(repository, 'delete').mockRejectedValue(new Error('Storage is broken'))
+    const deleteButton = wrapper.findAll('button').find((b) => b.text() === 'Delete ride')
+    await deleteButton?.trigger('click')
+    await wrapper.get('dialog').findAll('button')[1]?.trigger('click')
+    await flushPromises()
+    expect(notifications.current).toBeNull()
   })
 })

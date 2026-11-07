@@ -4,10 +4,12 @@ import RideForm from '@/components/RideForm.vue'
 import { useReturnToList } from '@/composables/useReturnToList'
 import { useRideSave } from '@/composables/useRideSave'
 import { emptyRideDraft } from '@/models/rideDraft'
+import { useNotificationsStore } from '@/stores/notifications'
 import { useRidesStore } from '@/stores/rides'
 import { todayIsoDate } from '@/utils/isoDate'
 
 const ridesStore = useRidesStore()
+const notifications = useNotificationsStore()
 const returnToList = useReturnToList()
 
 const today = todayIsoDate()
@@ -15,7 +17,12 @@ const initialDraft = emptyRideDraft(today)
 
 const { fieldErrors, saveError, submitting, submit } = useRideSave(
   (input) => ridesStore.addRide(input),
-  { onSaved: returnToList },
+  {
+    onSaved: (ride) => {
+      notifications.notify(`Ride added: ${ride.name}.`)
+      returnToList()
+    },
+  },
 )
 </script>
 

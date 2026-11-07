@@ -8,6 +8,7 @@ import RideForm from '@/components/RideForm.vue'
 import { useReturnToList } from '@/composables/useReturnToList'
 import { useRideSave } from '@/composables/useRideSave'
 import { rideToDraft } from '@/models/rideDraft'
+import { useNotificationsStore } from '@/stores/notifications'
 import { useRidesStore } from '@/stores/rides'
 import { formatRideDate } from '@/utils/formatting'
 import { todayIsoDate } from '@/utils/isoDate'
@@ -18,6 +19,7 @@ const props = defineProps<{
 }>()
 
 const ridesStore = useRidesStore()
+const notifications = useNotificationsStore()
 const { loadStatus, loadError } = storeToRefs(ridesStore)
 const returnToList = useReturnToList()
 
@@ -29,7 +31,12 @@ const isLoading = computed(() => loadStatus.value === 'idle' || loadStatus.value
 
 const { fieldErrors, saveError, submitting, submit } = useRideSave(
   (input) => ridesStore.updateRide(props.id, input),
-  { onSaved: returnToList },
+  {
+    onSaved: (ride) => {
+      notifications.notify(`Changes saved: ${ride.name}.`)
+      returnToList()
+    },
+  },
 )
 
 // --- Delete ------------------------------------------------------------------
@@ -49,8 +56,11 @@ function askToDelete(): void {
 async function deleteRide(): Promise<void> {
   deleting.value = true
   deleteError.value = null
+  // Read the name now: once deleted, the ride is gone from the store.
+  const name = ride.value?.name
   try {
     await ridesStore.deleteRide(props.id)
+    notifications.notify(name ? `Ride deleted: ${name}.` : 'Ride deleted.')
     deleted.value = true
     confirmingDelete.value = false
     returnToList()
