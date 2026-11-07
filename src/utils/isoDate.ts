@@ -68,3 +68,63 @@ export function isoDateToLocalDate(value: IsoDate): Date {
   }
   return new Date(year, month - 1, day)
 }
+
+// --- Calendar arithmetic --------------------------------------------------------
+// These work purely on calendar dates. Date.UTC is used only as a calendar
+// calculator (it knows month lengths and leap years); no time zone is involved,
+// so results never shift by a day.
+
+function toCalendarDate(value: IsoDate): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  if (year === undefined || month === undefined || day === undefined || !isValidIsoDate(value)) {
+    throw new Error(`Not a valid ISO date: ${value}`)
+  }
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function fromCalendarDate(date: Date): IsoDate {
+  const year = String(date.getUTCFullYear()).padStart(4, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** The date `days` days later (or earlier, if negative). */
+export function addDays(value: IsoDate, days: number): IsoDate {
+  const date = toCalendarDate(value)
+  date.setUTCDate(date.getUTCDate() + days)
+  return fromCalendarDate(date)
+}
+
+/**
+ * The same day `months` months later (or earlier). If that month is shorter,
+ * the day is clamped to its last day: 31 Jan + 1 month → 28 (or 29) Feb.
+ */
+export function addMonths(value: IsoDate, months: number): IsoDate {
+  const date = toCalendarDate(value)
+  const day = date.getUTCDate()
+  date.setUTCDate(1) // avoid rolling over while changing the month
+  date.setUTCMonth(date.getUTCMonth() + months)
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(day, lastDay))
+  return fromCalendarDate(date)
+}
+
+/** The Monday on or before `value` (ISO 8601 weeks start on Monday). */
+export function startOfIsoWeek(value: IsoDate): IsoDate {
+  const dayOfWeek = toCalendarDate(value).getUTCDay() // 0 = Sunday … 6 = Saturday
+  const daysSinceMonday = (dayOfWeek + 6) % 7
+  return addDays(value, -daysSinceMonday)
+}
+
+/** The first day of the month containing `value`. */
+export function startOfMonth(value: IsoDate): IsoDate {
+  toCalendarDate(value) // validates
+  return `${value.slice(0, 7)}-01`
+}
+
+/** 1 January of the year containing `value`. */
+export function startOfYear(value: IsoDate): IsoDate {
+  toCalendarDate(value) // validates
+  return `${value.slice(0, 4)}-01-01`
+}

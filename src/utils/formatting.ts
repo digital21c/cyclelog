@@ -46,3 +46,51 @@ export function formatElevationM(elevationM: number): string {
 export function formatRideCount(count: number): string {
   return `${count} ${count === 1 ? 'ride' : 'rides'}`
 }
+
+// --- Statistics periods ------------------------------------------------------------
+
+const monthYearFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' })
+const shortMonthFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'short' })
+const dayMonthFormatter = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' })
+const dayMonthYearFormatter = new Intl.DateTimeFormat(LOCALE, {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+/** The kinds of period statistics are grouped by (mirrors StatsPeriod in services). */
+type Period = 'week' | 'month' | 'year'
+
+/**
+ * Full label for a period, given its first day:
+ * week "2 Nov 2026" (its Monday), month "November 2026", year "2026".
+ */
+export function formatPeriodLabel(periodStart: IsoDate, period: Period): string {
+  switch (period) {
+    case 'week':
+      // No weekday: weeks always start on Monday, and it keeps tables narrow.
+      return dayMonthYearFormatter.format(isoDateToLocalDate(periodStart))
+    case 'month':
+      return monthYearFormatter.format(isoDateToLocalDate(periodStart))
+    case 'year':
+      return periodStart.slice(0, 4)
+  }
+}
+
+/** Compact label for chart axes: "2 Nov", "Nov", "2026". */
+export function formatPeriodShortLabel(periodStart: IsoDate, period: Period): string {
+  const date = isoDateToLocalDate(periodStart)
+  switch (period) {
+    case 'week':
+      return dayMonthFormatter.format(date)
+    case 'month':
+      return shortMonthFormatter.format(date)
+    case 'year':
+      return periodStart.slice(0, 4)
+  }
+}
+
+/** 1 → "1 week", 12 → "12 months", 3 → "3 years". */
+export function formatPeriodCount(count: number, period: Period): string {
+  return `${count} ${period}${count === 1 ? '' : 's'}`
+}

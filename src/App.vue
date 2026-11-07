@@ -9,6 +9,11 @@ import { useRidesStore } from '@/stores/rides'
 // to reload. loadRides never rejects: failures are recorded in loadError.
 const ridesStore = useRidesStore()
 void ridesStore.loadRides()
+
+const navItems = [
+  { name: 'statistics', label: 'Statistics' },
+  { name: 'backup', label: 'Backup' },
+] as const
 </script>
 
 <template>
@@ -22,13 +27,15 @@ void ridesStore.loadRides()
           CycleLog
         </RouterLink>
 
-        <nav aria-label="Main">
+        <nav aria-label="Main" class="flex gap-1">
           <!-- RouterLink sets aria-current="page" on the link for the current page. -->
           <RouterLink
-            :to="{ name: 'backup' }"
+            v-for="item in navItems"
+            :key="item.name"
+            :to="{ name: item.name }"
             class="rounded px-2 py-1 text-sm font-medium text-slate-600 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 aria-[current=page]:text-sky-700 aria-[current=page]:underline dark:text-slate-400 dark:hover:text-slate-100 dark:aria-[current=page]:text-sky-400"
           >
-            Backup
+            {{ item.label }}
           </RouterLink>
         </nav>
       </div>

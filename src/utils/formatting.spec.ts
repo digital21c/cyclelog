@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
 
-import { formatDistanceKm, formatElevationM, formatRideCount, formatRideDate } from './formatting'
+import {
+  formatDistanceKm,
+  formatElevationM,
+  formatPeriodCount,
+  formatPeriodLabel,
+  formatPeriodShortLabel,
+  formatRideCount,
+  formatRideDate,
+} from './formatting'
 
 describe('formatRideDate', () => {
   it('formats as short weekday, day, short month and year', () => {
@@ -41,5 +49,26 @@ describe('formatRideCount', () => {
     [40, '40 rides'],
   ])('%s → %s', (count, expected) => {
     expect(formatRideCount(count)).toBe(expected)
+  })
+})
+
+describe('period labels', () => {
+  it.each([
+    ['week', '2026-11-02', '2 Nov 2026', '2 Nov'],
+    ['month', '2026-11-01', 'November 2026', 'Nov'],
+    ['month', '2026-09-01', 'September 2026', 'Sept'],
+    ['year', '2026-01-01', '2026', '2026'],
+  ] as const)('%s starting %s → "%s" / "%s"', (period, start, full, short) => {
+    expect(formatPeriodLabel(start, period)).toBe(full)
+    expect(formatPeriodShortLabel(start, period)).toBe(short)
+  })
+
+  it.each([
+    [1, 'week', '1 week'],
+    [12, 'week', '12 weeks'],
+    [12, 'month', '12 months'],
+    [3, 'year', '3 years'],
+  ] as const)('counts %s %s as "%s"', (count, period, expected) => {
+    expect(formatPeriodCount(count, period)).toBe(expected)
   })
 })

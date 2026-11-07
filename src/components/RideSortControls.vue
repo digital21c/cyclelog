@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 
 import type { RideSort, RideSortField, SortDirection } from '@/models/rideSort'
+
+import SegmentedControl from './SegmentedControl.vue'
 
 /**
  * Two-way bound sort selection: `<RideSortControls v-model="sort" />`.
@@ -23,9 +25,6 @@ const directionLabels: Record<RideSortField, Record<SortDirection, string>> = {
 
 const directionLabel = computed(() => directionLabels[sort.value.field][sort.value.direction])
 
-// Unique per component instance, so two sort controls on one page wouldn't clash.
-const radioGroupName = useId()
-
 function selectField(field: RideSortField): void {
   sort.value = { ...sort.value, field }
 }
@@ -37,30 +36,13 @@ function reverseDirection(): void {
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-    <fieldset class="flex items-center gap-2">
-      <legend class="sr-only">Sort rides by</legend>
-      <span aria-hidden="true" class="text-sm text-slate-600 dark:text-slate-400">Sort by</span>
-
-      <div
-        class="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 dark:border-slate-600 dark:bg-slate-800"
-      >
-        <label
-          v-for="option in fieldOptions"
-          :key="option.value"
-          class="cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 select-none hover:bg-slate-100 has-checked:bg-slate-900 has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-sky-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:has-checked:bg-slate-100 dark:has-checked:text-slate-900"
-        >
-          <input
-            type="radio"
-            class="sr-only"
-            :name="radioGroupName"
-            :value="option.value"
-            :checked="sort.field === option.value"
-            @change="selectField(option.value)"
-          />
-          {{ option.label }}
-        </label>
-      </div>
-    </fieldset>
+    <SegmentedControl
+      :model-value="sort.field"
+      :options="fieldOptions"
+      legend="Sort rides by"
+      label="Sort by"
+      @update:model-value="selectField"
+    />
 
     <button
       type="button"

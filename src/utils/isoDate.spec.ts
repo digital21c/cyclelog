@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest'
 
 import {
+  addDays,
+  addMonths,
   compareIsoDates,
   isoDateToLocalDate,
   isValidIsoDate,
+  startOfIsoWeek,
+  startOfMonth,
+  startOfYear,
   toIsoDate,
   todayIsoDate,
 } from './isoDate'
@@ -68,5 +73,61 @@ describe('isoDateToLocalDate', () => {
 
   it('throws for an invalid date', () => {
     expect(() => isoDateToLocalDate('2026-02-30')).toThrow('Not a valid ISO date')
+  })
+})
+
+describe('addDays', () => {
+  it.each([
+    ['2026-11-06', 1, '2026-11-07'],
+    ['2026-11-30', 1, '2026-12-01'],
+    ['2026-12-31', 1, '2027-01-01'],
+    ['2024-02-28', 1, '2024-02-29'],
+    ['2026-03-01', -1, '2026-02-28'],
+    ['2026-11-06', -84, '2026-08-14'],
+  ])('%s %+d days → %s', (date, days, expected) => {
+    expect(addDays(date, days)).toBe(expected)
+  })
+
+  it('is unaffected by daylight-saving changes', () => {
+    // Sydney's clocks change on 5 Oct 2026 and 5 Apr 2026; Europe's on 29 Mar / 25 Oct.
+    expect(addDays('2026-10-04', 1)).toBe('2026-10-05')
+    expect(addDays('2026-03-29', 1)).toBe('2026-03-30')
+  })
+})
+
+describe('addMonths', () => {
+  it.each([
+    ['2026-11-01', 1, '2026-12-01'],
+    ['2026-12-01', 1, '2027-01-01'],
+    ['2026-11-01', -11, '2025-12-01'],
+    ['2026-01-31', 1, '2026-02-28'],
+    ['2024-01-31', 1, '2024-02-29'],
+    ['2026-03-31', -1, '2026-02-28'],
+  ])('%s %+d months → %s', (date, months, expected) => {
+    expect(addMonths(date, months)).toBe(expected)
+  })
+})
+
+describe('startOfIsoWeek', () => {
+  it.each([
+    ['2026-11-02', '2026-11-02'], // Monday
+    ['2026-11-07', '2026-11-02'], // Saturday
+    ['2026-11-08', '2026-11-02'], // Sunday belongs to the week that began on Monday
+    ['2026-01-01', '2025-12-29'], // Thursday: the week starts in the previous year
+    ['2026-03-01', '2026-02-23'], // across a month boundary
+  ])('%s → %s', (date, expected) => {
+    expect(startOfIsoWeek(date)).toBe(expected)
+  })
+})
+
+describe('startOfMonth / startOfYear', () => {
+  it('finds the first day of the month and year', () => {
+    expect(startOfMonth('2026-11-07')).toBe('2026-11-01')
+    expect(startOfYear('2026-11-07')).toBe('2026-01-01')
+  })
+
+  it('rejects invalid dates', () => {
+    expect(() => startOfMonth('2026-02-30')).toThrow('Not a valid ISO date')
+    expect(() => startOfYear('nope')).toThrow('Not a valid ISO date')
   })
 })
