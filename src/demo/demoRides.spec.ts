@@ -37,17 +37,39 @@ describe('generateDemoRides', () => {
     expect(generateDemoRides({ today: TODAY, seed: 7 })).not.toEqual(rides)
   })
 
-  it('generates roughly 40 rides', () => {
-    expect(rides.length).toBeGreaterThanOrEqual(30)
-    expect(rides.length).toBeLessThanOrEqual(55)
-  })
+  // TODAY is 6 Nov 2026: recent rides fall from 8 Aug to 5 Nov 2026, history in 2023-2025.
+  const recentStart = toIsoDate(new Date(2026, 10, 6 - 90))
+  const recent = rides.filter((ride) => compareIsoDates(ride.date, recentStart) >= 0)
+  const history = rides.filter((ride) => compareIsoDates(ride.date, recentStart) < 0)
 
-  it('dates every ride within the last 90 days, excluding today', () => {
-    const earliest = toIsoDate(new Date(2026, 10, 6 - 90))
-    for (const ride of rides) {
-      expect(compareIsoDates(ride.date, earliest)).toBeGreaterThanOrEqual(0)
+  it('generates roughly 40 recent rides in the last 90 days, excluding today', () => {
+    expect(recent.length).toBeGreaterThanOrEqual(30)
+    expect(recent.length).toBeLessThanOrEqual(55)
+    for (const ride of recent) {
       expect(compareIsoDates(ride.date, '2026-11-05')).toBeLessThanOrEqual(0)
     }
+  })
+
+  it('adds a history in each of the three previous years, fewer further back', () => {
+    const perYear = new Map<string, number>()
+    for (const ride of history) {
+      const year = ride.date.slice(0, 4)
+      perYear.set(year, (perYear.get(year) ?? 0) + 1)
+    }
+    expect(Object.fromEntries(perYear)).toEqual({ '2025': 24, '2024': 16, '2023': 10 })
+  })
+
+  it('puts history rides on different days', () => {
+    expect(new Set(history.map((ride) => ride.date)).size).toBe(history.length)
+  })
+
+  it('leaves the recent rides unchanged by the history', () => {
+    expect(generateDemoRides({ today: TODAY, historyYears: 0 })).toEqual(recent)
+  })
+
+  it('can generate fewer years of history', () => {
+    const oneYear = generateDemoRides({ today: TODAY, historyYears: 1 })
+    expect(new Set(oneYear.map((ride) => ride.date.slice(0, 4)))).toEqual(new Set(['2025', '2026']))
   })
 
   it("keeps each ride within its route's ranges and the overall bounds", () => {

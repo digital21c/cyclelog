@@ -79,7 +79,15 @@ export interface DemoRideOptions {
   today?: Date
   days?: number
   seed?: number
+  /** How many earlier calendar years get a sparse history (0 to 3). */
+  historyYears?: number
 }
+
+/**
+ * Rides in each earlier calendar year: one year ago, two years ago, three
+ * years ago. Fewer further back, so the yearly chart shows a rising trend.
+ */
+const HISTORY_RIDES_PER_YEAR = [24, 16, 10] as const
 
 // Chance of riding on a given day, and of an extra commute on a weekday.
 const WEEKDAY_RIDE_CHANCE = 0.35
@@ -87,45 +95,90 @@ const WEEKEND_RIDE_CHANCE = 0.7
 const EXTRA_COMMUTE_CHANCE = 0.15
 
 /**
- * Generates roughly 40 rides over the last 90 days: shorter rides on weekdays,
- * longer ones at weekends. The same options always produce the same rides.
+ * Generates demo rides: roughly 40 over the last 90 days (shorter rides on
+ * weekdays, longer ones at weekends), plus a sparse history spread through
+ * the previous three calendar years, so yearly statistics span several years.
+ *
+ * The same options always produce the same rides. The history uses its own
+ * random sequence, so adding it didn't change the recent rides.
  * Every ride is built with `createRide`, so it passes normal validation.
  */
 export function generateDemoRides({
   today = new Date(),
   days = 90,
   seed = 2026,
+  historyYears = HISTORY_RIDES_PER_YEAR.length,
 }: DemoRideOptions = {}): Ride[] {
-  const random = createSeededRandom(seed)
   const rides: Ride[] = []
+  const addRide = (day: Date, route: DemoRoute, index: number, random: () => number) => {
+    rides.push(buildRide(day, route, index, `demo-${rides.length + 1}`, random))
+  }
 
+  // Recent rides: a ride on most weekends and some weekdays.
+  const random = createSeededRandom(seed)
   for (let daysAgo = days; daysAgo >= 1; daysAgo--) {
     // Local-date arithmetic: the Date constructor rolls over months and years for us.
     const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysAgo)
-    const routes = chooseRoutesForDay(day, random)
+    chooseRoutesForDay(day, random).forEach((route, index) => addRide(day, route, index, random))
+  }
 
-    routes.forEach((route, index) => {
-      // Recorded in the evening; a second ride that day is recorded an hour later.
-      const recordedAt = new Date(day)
-      recordedAt.setHours(18 + index, Math.floor(random() * 60))
-
-      const result = createRide(
-        {
-          date: toIsoDate(day),
-          name: route.name,
-          distanceKm: randomBetween(route.distanceKm, random),
-          elevationM: Math.round(randomBetween(route.elevationM, random)),
-        },
-        { now: recordedAt, generateId: () => `demo-${rides.length + 1}` },
+  // History: a fixed number of rides on random days in each earlier year.
+  const historyRandom = createSeededRandom(seed + 1)
+  for (
+    let yearsAgo = Math.min(historyYears, HISTORY_RIDES_PER_YEAR.length);
+    yearsAgo >= 1;
+    yearsAgo--
+  ) {
+    const year = today.getFullYear() - yearsAgo
+    const count = HISTORY_RIDES_PER_YEAR[yearsAgo - 1] ?? 0
+    for (const day of randomDaysInYear(year, count, historyRandom)) {
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6
+      addRide(
+        day,
+        pick(isWeekend ? WEEKEND_ROUTES : WEEKDAY_ROUTES, historyRandom),
+        0,
+        historyRandom,
       )
-      if (!result.valid) {
-        throw new Error(`Generated an invalid demo ride: ${JSON.stringify(result.errors)}`)
-      }
-      rides.push(result.value)
-    })
+    }
   }
 
   return rides
+}
+
+/** Creates one valid ride on `day`, recorded that evening (an hour later per extra ride). */
+function buildRide(
+  day: Date,
+  route: DemoRoute,
+  indexThatDay: number,
+  id: string,
+  random: () => number,
+): Ride {
+  const recordedAt = new Date(day)
+  recordedAt.setHours(18 + indexThatDay, Math.floor(random() * 60))
+
+  const result = createRide(
+    {
+      date: toIsoDate(day),
+      name: route.name,
+      distanceKm: randomBetween(route.distanceKm, random),
+      elevationM: Math.round(randomBetween(route.elevationM, random)),
+    },
+    { now: recordedAt, generateId: () => id },
+  )
+  if (!result.valid) {
+    throw new Error(`Generated an invalid demo ride: ${JSON.stringify(result.errors)}`)
+  }
+  return result.value
+}
+
+/** `count` different days in `year`, in date order. */
+function randomDaysInYear(year: number, count: number, random: () => number): Date[] {
+  const daysInYear = new Date(year, 1, 29).getDate() === 29 ? 366 : 365
+  const dayNumbers = new Set<number>()
+  while (dayNumbers.size < Math.min(count, daysInYear)) {
+    dayNumbers.add(Math.floor(random() * daysInYear))
+  }
+  return [...dayNumbers].sort((a, b) => a - b).map((dayOfYear) => new Date(year, 0, 1 + dayOfYear))
 }
 
 function chooseRoutesForDay(day: Date, random: () => number): DemoRoute[] {
