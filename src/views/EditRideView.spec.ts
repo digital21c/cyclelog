@@ -181,3 +181,88 @@ describe('EditRideView when rides cannot be loaded', () => {
     expect(wrapper.text()).not.toContain("couldn't be found")
   })
 })
+
+describe('EditRideView delete', () => {
+  function buttonNamed(wrapper: VueWrapper, text: string) {
+    const found = wrapper.findAll('button').find((candidate) => candidate.text() === text)
+    if (!found) throw new Error(`No button "${text}"`)
+    return found
+  }
+
+  function dialogIsOpen(wrapper: VueWrapper): boolean {
+    return (wrapper.get('dialog').element as HTMLDialogElement).open
+  }
+
+  it('asks for confirmation, naming the ride and its date', async () => {
+    const { wrapper } = await openEditRide(await repositoryWith([ride]))
+    expect(dialogIsOpen(wrapper)).toBe(false)
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+
+    expect(dialogIsOpen(wrapper)).toBe(true)
+    expect(wrapper.get('dialog').text()).toContain('Uriarra Loop on Sun, 25 Oct 2026')
+    expect(wrapper.get('dialog').text()).toContain("can't be undone")
+  })
+
+  it('keeps the ride when the confirmation is cancelled', async () => {
+    const repository = await repositoryWith([ride])
+    const { wrapper, router } = await openEditRide(repository)
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+    await wrapper.get('dialog').findAll('button')[0]?.trigger('click') // Cancel
+
+    expect(dialogIsOpen(wrapper)).toBe(false)
+    expect(await repository.getAll()).toEqual([ride])
+    expect(router.currentRoute.value.name).toBe('edit-ride')
+  })
+
+  it('deletes the ride and returns to the sorted list once confirmed', async () => {
+    const repository = await repositoryWith([ride])
+    const { wrapper, router, store } = await openEditRide(repository, {
+      cameFrom: '/?sort=distance',
+    })
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+    await wrapper.get('dialog').findAll('button')[1]?.trigger('click') // confirm
+    await flushPromises()
+
+    expect(await repository.getAll()).toEqual([])
+    expect(store.rides).toEqual([])
+    expect(wrapper.text()).toContain('Ride deleted.')
+    expect(wrapper.text()).not.toContain("couldn't be found")
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/?sort=distance'))
+  })
+
+  it('keeps the ride and explains why if deleting fails', async () => {
+    const repository = await repositoryWith([ride])
+    const { wrapper, router } = await openEditRide(repository)
+    vi.spyOn(repository, 'delete').mockRejectedValue(
+      new Error('Stored ride data is not valid JSON.'),
+    )
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+    await wrapper.get('dialog').findAll('button')[1]?.trigger('click')
+    await flushPromises()
+
+    expect(dialogIsOpen(wrapper)).toBe(true)
+    expect(wrapper.get('dialog [role="alert"]').text()).toContain(
+      'Stored ride data is not valid JSON.',
+    )
+    expect(await repository.getAll()).toEqual([ride])
+    expect(router.currentRoute.value.name).toBe('edit-ride')
+  })
+
+  it('clears an old error when the confirmation is opened again', async () => {
+    const repository = await repositoryWith([ride])
+    const { wrapper } = await openEditRide(repository)
+    vi.spyOn(repository, 'delete').mockRejectedValueOnce(new Error('Temporary failure'))
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+    await wrapper.get('dialog').findAll('button')[1]?.trigger('click')
+    await flushPromises()
+    await wrapper.get('dialog').findAll('button')[0]?.trigger('click') // Cancel
+
+    await buttonNamed(wrapper, 'Delete ride').trigger('click')
+    expect(wrapper.find('dialog [role="alert"]').exists()).toBe(false)
+  })
+})

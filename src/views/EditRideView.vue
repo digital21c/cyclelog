@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import AlertMessage from '@/components/AlertMessage.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import RideForm from '@/components/RideForm.vue'
 import { useReturnToList } from '@/composables/useReturnToList'
 import { useRideSave } from '@/composables/useRideSave'
 import { rideToDraft } from '@/models/rideDraft'
 import { useRidesStore } from '@/stores/rides'
+import { formatRideDate } from '@/utils/formatting'
 import { todayIsoDate } from '@/utils/isoDate'
 
 /** The ride's id, passed in from the URL by the router (`props: true`). */
@@ -29,6 +31,36 @@ const { fieldErrors, saveError, submitting, submit } = useRideSave(
   (input) => ridesStore.updateRide(props.id, input),
   { onSaved: returnToList },
 )
+
+// --- Delete ------------------------------------------------------------------
+
+const confirmingDelete = ref(false)
+const deleting = ref(false)
+const deleteError = ref<string | null>(null)
+// Set once deleted, so the page shows "Ride deleted." while navigating away,
+// rather than briefly flashing "That ride couldn't be found."
+const deleted = ref(false)
+
+function askToDelete(): void {
+  deleteError.value = null
+  confirmingDelete.value = true
+}
+
+async function deleteRide(): Promise<void> {
+  deleting.value = true
+  deleteError.value = null
+  try {
+    await ridesStore.deleteRide(props.id)
+    deleted.value = true
+    confirmingDelete.value = false
+    returnToList()
+  } catch (error) {
+    // Storage failed: the ride is still there. Keep the dialog open with the reason.
+    deleteError.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -45,6 +77,10 @@ const { fieldErrors, saveError, submitting, submit } = useRideSave(
       title="Your rides couldn't be loaded."
       :message="loadError"
     />
+
+    <p v-else-if="deleted" role="status" class="mt-4 text-slate-600 dark:text-slate-400">
+      Ride deleted.
+    </p>
 
     <div v-else-if="!ride" class="mt-4 space-y-2 text-slate-600 dark:text-slate-400">
       <p>That ride couldn't be found. It may have been deleted.</p>
@@ -76,6 +112,32 @@ const { fieldErrors, saveError, submitting, submit } = useRideSave(
         @submit="submit"
         @cancel="returnToList"
       />
+
+      <!-- Kept apart from Save/Cancel so it isn't pressed by mistake. -->
+      <div class="mt-10 border-t border-slate-200 pt-6 dark:border-slate-700">
+        <button
+          type="button"
+          class="rounded-lg border border-red-300 px-4 py-2 font-medium text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          @click="askToDelete"
+        >
+          Delete ride
+        </button>
+      </div>
+
+      <ConfirmDialog
+        v-model:open="confirmingDelete"
+        title="Delete this ride?"
+        confirm-label="Delete ride"
+        busy-label="Deleting…"
+        :busy="deleting"
+        :error="deleteError"
+        @confirm="deleteRide"
+      >
+        <p>
+          <strong class="font-semibold">{{ ride.name }}</strong> on
+          {{ formatRideDate(ride.date) }} will be permanently deleted. This can't be undone.
+        </p>
+      </ConfirmDialog>
     </template>
   </section>
 </template>

@@ -12,6 +12,8 @@ export default mergeConfig(
       // Node 25+ has its own built-in localStorage, which hides jsdom's and is
       // unusable without a --localstorage-file. Turn it off so tests get jsdom's.
       execArgv: ['--no-experimental-webstorage'],
+      // Fills gaps in jsdom (e.g. <dialog>.showModal) before each test file.
+      setupFiles: ['./vitest.setup.ts'],
       // Used by `npm run test:coverage`. No minimum thresholds on purpose:
       // coverage is a periodic check for untested behaviour, not a target.
       coverage: {
