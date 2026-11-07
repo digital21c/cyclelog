@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 
+import UpdatePrompt from '@/components/UpdatePrompt.vue'
 import { useRidesStore } from '@/stores/rides'
 
 // Load rides once, at startup, so every page can read them from the store.
@@ -36,5 +37,7 @@ void ridesStore.loadRides()
     <main class="mx-auto max-w-3xl px-4 py-6">
       <RouterView />
     </main>
+
+    <UpdatePrompt />
   </div>
 </template>

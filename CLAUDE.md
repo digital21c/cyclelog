@@ -74,6 +74,7 @@ npm test             # run Vitest once (use this for verification)
 npm run test:unit    # Vitest in watch mode (interactive development)
 npm run test:coverage  # tests + coverage report (terminal, and coverage/index.html)
 npm run dev:demo     # dev server with in-memory demo rides; real storage untouched
+npm run preview      # serve the production build (after npm run build); the PWA runs here
 npm run lint         # oxlint then ESLint, both with --fix
 npm run format       # Prettier on src/
 ```
@@ -185,9 +186,16 @@ and no `provide`/`inject` used as a store.
 # Offline First
 
 - Assume there's no network. All features must work fully offline.
-- Make the app an installable PWA with a service worker so it loads offline. This needs a
-  dependency (likely `vite-plugin-pwa`); propose it once basic ride CRUD (create, read,
-  update, delete) works.
+- The app is an installable PWA (`vite-plugin-pwa`, configured in `vite.config.ts`). The
+  service worker precaches the whole build, including lazy-loaded pages, and answers every
+  in-app URL with `index.html`.
+- Updates are never applied silently: `UpdatePrompt.vue` offers "Reload" when a new version
+  is waiting, so an unsaved form can't be lost to an automatic reload.
+- The service worker is off in `npm run dev`. Test offline behaviour with
+  `npm run build && npm run preview`, then stop the server and reload.
+- Persistent storage (`navigator.storage.persist()`) is only requested from a button on the
+  Backup page, never at startup: Firefox shows a permission prompt for it.
+- Service workers need HTTPS (or localhost), so phone use requires a static HTTPS host.
 
 # UI And Styling
 

@@ -19,6 +19,7 @@ npm run dev
 | `npm run dev`           | Dev server with hot reload                                |
 | `npm run dev:demo`      | Dev server with in-memory demo rides (storage untouched)  |
 | `npm run build`         | Type-check and production build                           |
+| `npm run preview`       | Serve the production build, with offline support (PWA)    |
 | `npm run type-check`    | Type-check only                                           |
 | `npm test`              | Run unit tests once                                       |
 | `npm run test:unit`     | Unit tests in watch mode                                  |

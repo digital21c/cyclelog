@@ -2,9 +2,19 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CycleLog</title>
+    <meta name="description" content="A personal, offline-first cycling training log.">
+
+    <!-- Icons: SVG for modern browsers, PNG fallback, and the iOS home-screen icon. -->
+    <link rel="icon" href="/logo.svg" type="image/svg+xml">
+    <link rel="icon" href="/pwa-64x64.png" type="image/png" sizes="64x64">
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
+
+    <!-- Browser UI colour (address bar, installed-app title bar), per colour scheme. -->
+    <meta name="theme-color" content="#0369a1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <!-- The web app manifest <link> is added by vite-plugin-pwa at build time. -->
   </head>
   <body>
     <div id="app"></div>

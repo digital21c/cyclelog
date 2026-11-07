@@ -4,8 +4,20 @@
     {
       "name": "cyclelog-demo",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "export NVM_DIR=\"$HOME/.nvm\"; . \"$NVM_DIR/nvm.sh\"; npm run dev:demo -- --port 5174 --strictPort"],
+      "runtimeArgs": [
+        "-c",
+        "export NVM_DIR=\"$HOME/.nvm\"; . \"$NVM_DIR/nvm.sh\"; npm run dev:demo -- --port 5174 --strictPort"
+      ],
       "port": 5174
+    },
+    {
+      "name": "cyclelog-preview",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "export NVM_DIR=\"$HOME/.nvm\"; . \"$NVM_DIR/nvm.sh\"; npm run build-only && npm run preview -- --port 4174 --strictPort"
+      ],
+      "port": 4174
     }
   ]
 }

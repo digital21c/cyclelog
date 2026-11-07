@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/vue" />
 
 /** Types for our own VITE_* environment variables (see .env.* files). */
 interface ImportMetaEnv {

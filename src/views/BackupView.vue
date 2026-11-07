@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import AlertMessage from '@/components/AlertMessage.vue'
+import StorageProtectionStatus from '@/components/StorageProtectionStatus.vue'
 import { useRideImport } from '@/composables/useRideImport'
 import { createBackup } from '@/services/rideBackup'
 import { useRidesStore } from '@/stores/rides'
@@ -42,6 +43,8 @@ const buttonClass =
       Your rides are stored only in this browser, which can clear them (for example when site data
       is cleared). Download a backup regularly and keep it somewhere safe.
     </p>
+
+    <StorageProtectionStatus class="mt-4" />
 
     <p v-if="isLoading" role="status" class="mt-6 text-slate-600 dark:text-slate-400">
       Loading rides…
