@@ -43,3 +43,13 @@ function parseDecimal(text: string): number {
   const trimmed = text.trim()
   return PLAIN_DECIMAL.test(trimmed) ? Number(trimmed) : Number.NaN
 }
+
+/** The reverse of `draftToRideInput`: fills the form from an existing ride. */
+export function rideToDraft(ride: RideInput): RideDraft {
+  return {
+    date: ride.date,
+    name: ride.name,
+    distanceKm: String(ride.distanceKm),
+    elevationM: String(ride.elevationM),
+  }
+}

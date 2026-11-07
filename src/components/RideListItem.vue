@@ -18,15 +18,25 @@ defineProps<{
       </time>
     </div>
 
-    <dl class="mt-2 flex gap-6 text-sm">
-      <div>
-        <dt class="text-slate-600 dark:text-slate-400">Distance</dt>
-        <dd class="font-medium tabular-nums">{{ formatDistanceKm(ride.distanceKm) }}</dd>
-      </div>
-      <div>
-        <dt class="text-slate-600 dark:text-slate-400">Climb</dt>
-        <dd class="font-medium tabular-nums">{{ formatElevationM(ride.elevationM) }}</dd>
-      </div>
-    </dl>
+    <div class="mt-2 flex items-end justify-between gap-4">
+      <dl class="flex gap-6 text-sm">
+        <div>
+          <dt class="text-slate-600 dark:text-slate-400">Distance</dt>
+          <dd class="font-medium tabular-nums">{{ formatDistanceKm(ride.distanceKm) }}</dd>
+        </div>
+        <div>
+          <dt class="text-slate-600 dark:text-slate-400">Climb</dt>
+          <dd class="font-medium tabular-nums">{{ formatElevationM(ride.elevationM) }}</dd>
+        </div>
+      </dl>
+
+      <RouterLink
+        :to="{ name: 'edit-ride', params: { id: ride.id } }"
+        :aria-label="`Edit ${ride.name}, ${formatRideDate(ride.date)}`"
+        class="rounded px-2 py-1 text-sm font-medium text-sky-700 hover:bg-sky-50 hover:text-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-400 dark:hover:bg-slate-700"
+      >
+        Edit
+      </RouterLink>
+    </div>
   </article>
 </template>

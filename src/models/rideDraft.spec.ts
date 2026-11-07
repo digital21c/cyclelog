@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { draftToRideInput, emptyRideDraft, type RideDraft } from './rideDraft'
+import { draftToRideInput, emptyRideDraft, rideToDraft, type RideDraft } from './rideDraft'
 
 function draft(overrides: Partial<RideDraft> = {}): RideDraft {
   return {
@@ -50,4 +50,20 @@ describe('draftToRideInput', () => {
       })
     },
   )
+})
+
+describe('rideToDraft', () => {
+  it('turns numbers into the text shown in the form', () => {
+    expect(
+      rideToDraft({ date: '2026-11-06', name: 'Cotter Loop', distanceKm: 52.4, elevationM: 540 }),
+    ).toEqual({ date: '2026-11-06', name: 'Cotter Loop', distanceKm: '52.4', elevationM: '540' })
+  })
+
+  it.each([
+    { date: '2026-11-06', name: 'Commute', distanceKm: 1, elevationM: 0 },
+    { date: '2026-01-31', name: 'Corin Dam Climb', distanceKm: 142.05, elevationM: 1500 },
+    { date: '2025-12-25', name: 'Christmas spin', distanceKm: 0.5, elevationM: 10 },
+  ])('round-trips $name unchanged through the form', (input) => {
+    expect(draftToRideInput(rideToDraft(input))).toEqual(input)
+  })
 })

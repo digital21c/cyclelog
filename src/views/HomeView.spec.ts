@@ -8,6 +8,7 @@ import { InMemoryKeyValueStore } from '@/repositories/keyValueStore'
 import { LocalStorageRideRepository } from '@/repositories/localStorageRideRepository'
 import type { RideRepository } from '@/repositories/rideRepository'
 import { rideRepositoryKey } from '@/stores/injectionKeys'
+import { useRidesStore } from '@/stores/rides'
 import { routes } from '@/router'
 
 import HomeView from './HomeView.vue'
@@ -56,7 +57,7 @@ async function repositoryWith(rides: Ride[]): Promise<RideRepository> {
 }
 
 /**
- * Mounts HomeView as main.ts would: fresh Pinia, the given repository, and a
+ * Mounts HomeView as the app would: fresh Pinia, the given repository, and a
  * router (in-memory history, so tests don't touch the browser URL).
  */
 async function mountHomeView(repository: RideRepository, url = '/') {
@@ -66,12 +67,15 @@ async function mountHomeView(repository: RideRepository, url = '/') {
   })
   await router.push(url)
 
+  const pinia = createPinia()
   const wrapper = mount(HomeView, {
     global: {
-      plugins: [router, createPinia()],
+      plugins: [router, pinia],
       provide: { [rideRepositoryKey]: repository },
     },
   })
+  // In the app, App.vue starts loading at startup; do the same here.
+  void useRidesStore(pinia).loadRides()
   return { wrapper, router }
 }
 

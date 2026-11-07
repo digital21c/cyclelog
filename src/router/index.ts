@@ -15,6 +15,13 @@ export const routes: RouteRecordRaw[] = [
     // Lazy-loaded: this page's code is fetched the first time it's visited.
     component: () => import('@/views/AddRideView.vue'),
   },
+  {
+    path: '/rides/:id/edit',
+    name: 'edit-ride',
+    component: () => import('@/views/EditRideView.vue'),
+    // Pass route params (here, `id`) to the view as props.
+    props: true,
+  },
 ]
 
 const router = createRouter({

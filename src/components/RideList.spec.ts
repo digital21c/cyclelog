@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { Ride } from '@/models/ride'
+import { routes } from '@/router'
 
 import RideList from './RideList.vue'
 
@@ -18,9 +20,14 @@ function makeRide(overrides: Partial<Ride> = {}): Ride {
   }
 }
 
+// Items contain RouterLinks, which need a router to build their hrefs.
+const router = createRouter({ history: createMemoryHistory(), routes })
+const withRouter = { plugins: [router] }
+
 describe('RideList', () => {
   it('renders one list item per ride, in the order given', () => {
     const wrapper = mount(RideList, {
+      global: withRouter,
       props: {
         rides: [
           makeRide({ id: 'a', name: 'Uriarra Loop' }),
@@ -34,7 +41,10 @@ describe('RideList', () => {
   })
 
   it('shows formatted date, distance and climb for each ride', () => {
-    const wrapper = mount(RideList, { props: { rides: [makeRide()] } })
+    const wrapper = mount(RideList, {
+      global: withRouter,
+      props: { rides: [makeRide()] },
+    })
     const item = wrapper.get('li')
 
     expect(item.get('time').text()).toBe('Sun, 1 Nov 2026')
@@ -44,7 +54,26 @@ describe('RideList', () => {
   })
 
   it('renders an empty list when there are no rides', () => {
-    const wrapper = mount(RideList, { props: { rides: [] } })
+    const wrapper = mount(RideList, {
+      global: withRouter,
+      props: { rides: [] },
+    })
     expect(wrapper.findAll('li')).toHaveLength(0)
+  })
+})
+
+describe('RideList edit links', () => {
+  it('links each ride to its edit page, named so screen-reader users know which ride', () => {
+    const wrapper = mount(RideList, {
+      global: withRouter,
+      props: { rides: [makeRide({ id: 'abc-123', name: 'Uriarra Loop', date: '2026-11-01' })] },
+    })
+    const link = wrapper.get('li a')
+
+    expect(link.attributes('href')).toBe('/rides/abc-123/edit')
+    expect(link.text()).toBe('Edit')
+    // The accessible name starts with the visible text, so voice-control users
+    // can still say "click Edit".
+    expect(link.attributes('aria-label')).toBe('Edit Uriarra Loop, Sun, 1 Nov 2026')
   })
 })

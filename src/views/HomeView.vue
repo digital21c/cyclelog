@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
+import AlertMessage from '@/components/AlertMessage.vue'
 import RideList from '@/components/RideList.vue'
 import RideSortControls from '@/components/RideSortControls.vue'
 import { useRideSortQuery } from '@/composables/useRideSortQuery'
@@ -22,10 +23,6 @@ const isLoading = computed(() => loadStatus.value === 'idle' || loadStatus.value
 const rideCountLabel = computed(
   () => `${rideCount.value} ${rideCount.value === 1 ? 'ride' : 'rides'}`,
 )
-
-onMounted(() => {
-  void ridesStore.loadRides() // never rejects: failures are recorded in loadError
-})
 </script>
 
 <template>
@@ -44,14 +41,12 @@ onMounted(() => {
       Loading rides…
     </p>
 
-    <div
+    <AlertMessage
       v-else-if="loadStatus === 'error'"
-      role="alert"
-      class="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
-    >
-      <p class="font-semibold">Your rides couldn't be loaded.</p>
-      <p class="mt-1 text-sm">{{ loadError }}</p>
-    </div>
+      class="mt-4"
+      title="Your rides couldn't be loaded."
+      :message="loadError"
+    />
 
     <p v-else-if="rideCount === 0" class="mt-4 text-slate-600 dark:text-slate-400">
       No rides recorded yet.
