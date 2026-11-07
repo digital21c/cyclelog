@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 
@@ -11,6 +11,15 @@ import UpdatePrompt from './UpdatePrompt.vue'
  * the mock factory, which Vitest moves above the imports.
  */
 const fake = vi.hoisted(() => ({
+  /** The options UpdatePrompt passed to useRegisterSW, e.g. its onRegisteredSW callback. */
+  options: undefined as
+    | undefined
+    | {
+        onRegisteredSW?: (
+          swUrl: string,
+          registration: ServiceWorkerRegistration | undefined,
+        ) => void
+      },
   state: undefined as
     | undefined
     | {
@@ -21,7 +30,10 @@ const fake = vi.hoisted(() => ({
 }))
 
 vi.mock('virtual:pwa-register/vue', () => ({
-  useRegisterSW: () => fake.state,
+  useRegisterSW: (options: typeof fake.options) => {
+    fake.options = options
+    return fake.state
+  },
 }))
 
 beforeEach(() => {
@@ -74,5 +86,67 @@ describe('UpdatePrompt', () => {
     await wrapper.findAll('button')[1]?.trigger('click') // Later
     expect(state().needRefresh.value).toBe(false)
     expect(state().updateServiceWorker).not.toHaveBeenCalled()
+  })
+})
+
+describe('UpdatePrompt hourly update check', () => {
+  const HOUR = 60 * 60 * 1000
+
+  beforeEach(() => {
+    // A pretend clock: advancing it an hour takes no real time.
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  /** Mounts the prompt, then plays the plugin's part: "the service worker is registered". */
+  function mountRegistered(update = vi.fn<() => Promise<void>>().mockResolvedValue()) {
+    mount(UpdatePrompt)
+    const registration = { update } as unknown as ServiceWorkerRegistration
+    fake.options?.onRegisteredSW?.('/sw.js', registration)
+    return update
+  }
+
+  it('checks for a new version every hour', () => {
+    const update = mountRegistered()
+
+    vi.advanceTimersByTime(HOUR - 1)
+    expect(update).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1)
+    expect(update).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(2 * HOUR)
+    expect(update).toHaveBeenCalledTimes(3)
+  })
+
+  it('skips the check while offline', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    const update = mountRegistered()
+
+    vi.advanceTimersByTime(3 * HOUR)
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('ignores a failed check and tries again next hour', async () => {
+    const update = mountRegistered(
+      vi.fn<() => Promise<void>>().mockRejectedValue(new Error('Network error')),
+    )
+
+    vi.advanceTimersByTime(HOUR)
+    await Promise.resolve() // let the rejection be handled; an unhandled one fails the test
+    vi.advanceTimersByTime(HOUR)
+
+    expect(update).toHaveBeenCalledTimes(2)
+  })
+
+  it('sets no timer when no service worker was registered', () => {
+    mount(UpdatePrompt)
+    fake.options?.onRegisteredSW?.('/sw.js', undefined)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

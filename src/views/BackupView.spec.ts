@@ -145,6 +145,23 @@ describe('BackupView import', () => {
     expect(await repository.getAll()).toEqual([])
   })
 
+  it("explains when the chosen file can't be read at all", async () => {
+    const wrapper = await openBackup(await repositoryWith([]))
+    const input = wrapper.get('input[type="file"]')
+    const unreadable = new File(['{}'], 'locked.json', { type: 'application/json' })
+    // e.g. the file was moved or its permissions changed after it was picked
+    Object.defineProperty(unreadable, 'text', {
+      value: () => Promise.reject(new DOMException('File could not be read', 'NotReadableError')),
+    })
+    Object.defineProperty(input.element, 'files', { value: [unreadable], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+
+    const alert = wrapper.get('[role="alert"]')
+    expect(alert.text()).toContain("locked.json can't be imported.")
+    expect(alert.text()).toContain("The file couldn't be read.")
+  })
+
   it('keeps the preview and allows a retry if saving fails', async () => {
     const repository = await repositoryWith([])
     const wrapper = await openBackup(repository)

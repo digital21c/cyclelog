@@ -56,4 +56,26 @@ describe('App', () => {
     })
     expect(name).toBeDefined()
   })
+
+  it('confirms a newly added ride on the list it returns to', async () => {
+    const wrapper = await mountApp('/rides/new')
+    const inputLabelled = (text: string) => {
+      const label = wrapper.findAll('label').find((candidate) => candidate.text() === text)
+      return wrapper.get(`#${CSS.escape(label?.attributes('for') ?? '')}`)
+    }
+
+    await inputLabelled('Ride name').setValue('Mount Majura Climb')
+    await inputLabelled('Distance (km)').setValue('18.2')
+    await inputLabelled('Climb (m)').setValue('340')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises() // save, navigate back to the list, render it
+
+    expect(wrapper.get('h1').text()).toBe('Rides')
+    expect(wrapper.text()).toContain('Mount Majura Climb')
+    const confirmation = wrapper
+      .findAll('[role="status"]')
+      .map((region) => region.text())
+      .find((text) => text.includes('Ride added'))
+    expect(confirmation).toContain('Ride added: Mount Majura Climb.')
+  })
 })

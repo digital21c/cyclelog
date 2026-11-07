@@ -143,6 +143,21 @@ describe('useRidesStore', () => {
       expect(store.findRide(ride.id)).toEqual(ride)
     })
 
+    it('changes only the edited ride when there are several', async () => {
+      const { store, repository } = setUpStore()
+      const first = await addValidRide(store, { name: 'First' })
+      const edited = await addValidRide(store, { name: 'To edit' })
+      const last = await addValidRide(store, { name: 'Last' })
+
+      await store.updateRide(edited.id, validInput({ name: 'Edited' }))
+
+      expect(store.rides.map((ride) => ride.name)).toEqual(['First', 'Edited', 'Last'])
+      expect(store.findRide(first.id)).toEqual(first)
+      expect(store.findRide(last.id)).toEqual(last)
+      const stored = await repository.getAll()
+      expect(stored.map((ride) => ride.name)).toEqual(['First', 'Edited', 'Last'])
+    })
+
     it('throws for an unknown ride id', async () => {
       const { store } = setUpStore()
       await expect(store.updateRide('missing', validInput())).rejects.toThrow(/does not exist/)
